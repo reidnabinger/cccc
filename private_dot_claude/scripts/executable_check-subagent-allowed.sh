@@ -14,9 +14,15 @@
 set -euo pipefail
 
 readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
-readonly STATE_DIR="${HOME}/.claude/state"
-readonly STATE_FILE="${STATE_DIR}/pipeline-state.json"
-readonly JOURNAL_FILE="${STATE_DIR}/pipeline-journal.log"
+
+# Source namespace utilities for namespace-aware paths
+# shellcheck source=namespace-utils.sh
+source "${HOME}/.claude/scripts/namespace-utils.sh"
+
+# Get namespace-aware paths (supports CLAUDE_TASK_NAMESPACE env var)
+STATE_DIR="$(get_state_dir)"
+STATE_FILE="$(get_state_file)"
+JOURNAL_FILE="$(get_journal_file)"
 
 # Stale state timeout in seconds (10 minutes)
 readonly STALE_TIMEOUT_SECONDS=600
@@ -617,7 +623,24 @@ function is_agent_allowed() {
       ;;
 
     COMPLETE)
-      # Pipeline complete, allow restart with task-classifier or context-gatherer
+      # Pipeline complete - but check if documentation is pending first
+      # DEV-NOTE: Documentation checkpoint enforcement. When a task completes,
+      # we require documentation before starting new work. This ensures
+      # institutional knowledge is captured while context is fresh.
+      if is_documentation_pending; then
+        log_message "BLOCKED: Documentation pending - must complete docs before new work"
+        journal_write "DOCS_BLOCK" "agent=${agent} reason=documentation_pending"
+
+        # Show the documentation checklist in the block message
+        local docs_msg
+        docs_msg="Documentation checkpoint required before starting new work. "
+        docs_msg+="Run '/task docs' to see checklist, '/task docs-complete' when done."
+
+        block_agent "${agent}" "${state}" "${docs_msg}"
+        return
+      fi
+
+      # No documentation pending, allow restart with task-classifier or context-gatherer
       if [[ "${agent}" == "task-classifier" ]]; then
         approve_agent "${agent}" "${state}"
       elif [[ "${agent}" == "context-gatherer" ]]; then
@@ -651,6 +674,10 @@ function main() {
     echo '{"decision": "block", "reason": "jq is required for pipeline enforcement"}' >&2
     return 1
   fi
+
+  # Migrate legacy state and ensure namespace directory exists
+  migrate_legacy_state 2>/dev/null || true
+  ensure_namespace_dir 2>/dev/null || true
 
   # Check for stale state and auto-reset if needed
   # This prevents pipeline from getting permanently stuck

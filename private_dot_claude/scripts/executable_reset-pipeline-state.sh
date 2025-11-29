@@ -9,9 +9,15 @@
 set -euo pipefail
 
 readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
-readonly STATE_DIR="${HOME}/.claude/state"
-readonly STATE_FILE="${STATE_DIR}/pipeline-state.json"
-readonly JOURNAL_FILE="${STATE_DIR}/pipeline-journal.log"
+
+# Source namespace utilities for namespace-aware paths
+# shellcheck source=namespace-utils.sh
+source "${HOME}/.claude/scripts/namespace-utils.sh"
+
+# Get namespace-aware paths (supports CLAUDE_TASK_NAMESPACE env var)
+STATE_DIR="$(get_state_dir)"
+STATE_FILE="$(get_state_file)"
+JOURNAL_FILE="$(get_journal_file)"
 
 #######################################
 # Write entry to journal file for debugging
@@ -98,7 +104,13 @@ function main() {
     log_message "ERROR: jq is required but not installed"
     return 1
   fi
-  
+
+  # Migrate legacy state and ensure namespace directory exists
+  migrate_legacy_state 2>/dev/null || true
+  ensure_namespace_dir 2>/dev/null || true
+
+  echo "Using namespace: $(get_namespace)"
+
   local -r reason="${1:-Manual reset}"
   reset_state "${reason}"
 }
