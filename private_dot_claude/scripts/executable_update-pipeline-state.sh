@@ -18,6 +18,61 @@ set -euo pipefail
 readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 readonly STATE_DIR="${HOME}/.claude/state"
 readonly STATE_FILE="${STATE_DIR}/pipeline-state.json"
+readonly JOURNAL_FILE="${STATE_DIR}/pipeline-journal.log"
+readonly CACHE_SCRIPT="${HOME}/.claude/scripts/context-cache.sh"
+
+#######################################
+# Write entry to journal file for debugging
+# Globals:
+#   JOURNAL_FILE
+# Arguments:
+#   Event type (TRANSITION, COMPLETE, ERROR, etc.)
+#   Message/details
+#######################################
+function journal_write() {
+  local -r event_type="$1"
+  local -r message="$2"
+  local -r timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  # Ensure journal directory exists
+  mkdir -p "$(dirname "${JOURNAL_FILE}")"
+
+  # Append to journal (one line per entry for easy parsing)
+  printf '%s\t%s\t%s\t%s\n' \
+    "${timestamp}" "${event_type}" "${SCRIPT_NAME}" "${message}" \
+    >> "${JOURNAL_FILE}" 2>/dev/null || true
+}
+
+#######################################
+# Store context in persistent cache
+# Called after context-refiner completes
+# Globals:
+#   STATE_FILE
+#   CACHE_SCRIPT
+#######################################
+function store_context_in_cache() {
+  if [[ ! -x "${CACHE_SCRIPT}" ]]; then
+    log_message "Cache script not available, skipping cache storage"
+    return 0
+  fi
+
+  # Read context from state file
+  local context_json
+  context_json=$(jq '.context' "${STATE_FILE}" 2>/dev/null) || return 0
+
+  if [[ -z "${context_json}" || "${context_json}" == "null" ]]; then
+    log_message "No context to cache"
+    return 0
+  fi
+
+  # Store in cache
+  if echo "${context_json}" | "${CACHE_SCRIPT}" store "$(pwd)" 2>/dev/null; then
+    log_message "Context stored in cache"
+    journal_write "CACHE_STORE" "Context cached for $(pwd)"
+  else
+    log_message "WARN: Failed to store context in cache"
+  fi
+}
 
 #######################################
 # Log message to stderr with timestamp
@@ -63,6 +118,82 @@ function read_hook_input() {
 
   echo "${hook_input}"
   return 0
+}
+
+#######################################
+# Extract classification mode from task-classifier transcript
+# Parses the transcript to find the classifier's JSON output
+# and extracts the classification field
+# Arguments:
+#   $1 - Transcript file path
+# Outputs:
+#   Classification mode (TRIVIAL, MODERATE, COMPLEX, EXPLORATORY) to stdout
+# Returns:
+#   0 on success, 1 on failure
+#######################################
+function extract_classification_from_transcript() {
+  local -r transcript_path="$1"
+  local -r expanded_path="${transcript_path/#\~/$HOME}"
+
+  if [[ ! -f "${expanded_path}" ]]; then
+    log_message "WARN: Transcript not found for classification extraction: ${expanded_path}"
+    return 1
+  fi
+
+  # Agent transcript format (JSONL):
+  # {"message": {"content": [{"type": "text", "text": "```json\n{\"classification\": \"TRIVIAL\"...}"}]}}
+  # The classification is embedded in markdown code blocks within message.content[].text
+
+  local classification
+
+  # Pattern 1: Extract from agent transcript .message.content[].text (most common)
+  classification="$(cat "${expanded_path}" | \
+    jq -r '.message.content[]? | select(.type == "text") | .text // empty' 2>/dev/null | \
+    grep -oP '"classification"\s*:\s*"(TRIVIAL|MODERATE|COMPLEX|EXPLORATORY)"' | \
+    head -1 | \
+    grep -oP '(TRIVIAL|MODERATE|COMPLEX|EXPLORATORY)')" || true
+
+  # Pattern 2: Try direct .content[].text (alternative structure)
+  if [[ -z "${classification}" ]]; then
+    classification="$(cat "${expanded_path}" | \
+      jq -r '.content[]? | select(.type == "text") | .text // empty' 2>/dev/null | \
+      grep -oP '"classification"\s*:\s*"(TRIVIAL|MODERATE|COMPLEX|EXPLORATORY)"' | \
+      head -1 | \
+      grep -oP '(TRIVIAL|MODERATE|COMPLEX|EXPLORATORY)')" || true
+  fi
+
+  # Pattern 3: Brute force with escaped quotes (JSON-in-JSON format)
+  # The agent transcript has escaped quotes: \"classification\": \"TRIVIAL\"
+  if [[ -z "${classification}" ]]; then
+    classification="$(grep -oP '\\\"classification\\\"[^\"]*\\\"(TRIVIAL|MODERATE|COMPLEX|EXPLORATORY)\\\"' "${expanded_path}" | \
+      head -1 | \
+      grep -oP '(TRIVIAL|MODERATE|COMPLEX|EXPLORATORY)')" || true
+  fi
+
+  # Pattern 4: Fallback to unescaped format (in case of different serialization)
+  if [[ -z "${classification}" ]]; then
+    classification="$(grep -oP '"classification"\s*:\s*"(TRIVIAL|MODERATE|COMPLEX|EXPLORATORY)"' "${expanded_path}" | \
+      head -1 | \
+      grep -oP '(TRIVIAL|MODERATE|COMPLEX|EXPLORATORY)')" || true
+  fi
+
+  if [[ -z "${classification}" ]]; then
+    log_message "WARN: Could not extract classification from transcript"
+    return 1
+  fi
+
+  # Validate classification value
+  case "${classification}" in
+    TRIVIAL|MODERATE|COMPLEX|EXPLORATORY)
+      log_message "Extracted classification from transcript: ${classification}"
+      echo "${classification}"
+      return 0
+      ;;
+    *)
+      log_message "WARN: Invalid classification value: ${classification}"
+      return 1
+      ;;
+  esac
 }
 
 #######################################
@@ -183,31 +314,57 @@ function extract_context_from_agent() {
 function determine_next_state() {
   local -r agent="$1"
   local -r current_state="$2"
-  
+
   log_message "Determining next state for agent: ${agent}, current: ${current_state}"
-  
-  # DEV-NOTE: State transitions based on agent completion
-  # context-gatherer → GATHERING (context gathered, ready for refinement)
-  # context-refiner → REFINING (context refined, ready for planning)
-  # strategic-orchestrator → EXECUTING (orchestrator finished, was in ORCHESTRATING_ACTIVE)
-  # language agents → remain in EXECUTING (until explicitly marked COMPLETE)
+
+  # DEV-NOTE: State transitions - SELF-ADVANCING CHAIN ARCHITECTURE
   #
-  # Note: REFINING → ORCHESTRATING_ACTIVE happens immediately when strategic-orchestrator
-  # is approved (in check-subagent-allowed.sh), not here
+  # With self-advancing chains, most transitions now happen IMMEDIATELY on
+  # agent APPROVAL (in check-subagent-allowed.sh), not on completion:
+  #
+  #   context-gatherer approved → GATHERING (immediate)
+  #   context-refiner approved  → REFINING (immediate)
+  #   strategic-orchestrator approved → ORCHESTRATING_ACTIVE (immediate)
+  #
+  # This allows agents to invoke their successors before completing.
+  # SubagentStop transitions are only needed for:
+  #   - task-classifier → CLASSIFIED (no self-advance, just classifies)
+  #   - strategic-orchestrator → EXECUTING (after orchestration completes)
+  #   - execution agents → EXECUTING (confirmation of execution phase)
+  #
+  # Transitions that are now NO-OPS (handled on approval):
+  #   - context-gatherer completion (already in GATHERING)
+  #   - context-refiner completion (already in REFINING)
 
   case "${agent}" in
-    context-gatherer)
-      if [[ "${current_state}" == "IDLE" ]]; then
-        echo "GATHERING"
+    task-classifier)
+      # Task classifier sets pipeline_mode and transitions to CLASSIFIED
+      if [[ "${current_state}" == "IDLE" || "${current_state}" == "COMPLETE" ]]; then
+        echo "CLASSIFIED"
         return 0
       fi
       ;;
 
+    architecture-gatherer|dependency-gatherer|pattern-gatherer|history-gatherer)
+      # Sub-gatherers don't trigger state transitions - they run within GATHERING
+      log_message "Sub-gatherer ${agent} completed, no state transition"
+      return 1
+      ;;
+
+    context-gatherer)
+      # DEV-NOTE: With self-advancing chains, state transition happens on APPROVAL
+      # (in check-subagent-allowed.sh), not completion. If we're here, state
+      # is already GATHERING. No transition needed.
+      log_message "context-gatherer completed, state already transitioned on approval"
+      return 1
+      ;;
+
     context-refiner)
-      if [[ "${current_state}" == "GATHERING" ]]; then
-        echo "REFINING"
-        return 0
-      fi
+      # DEV-NOTE: With self-advancing chains, state transition happens on APPROVAL
+      # (in check-subagent-allowed.sh), not completion. If we're here, state
+      # is already REFINING. No transition needed.
+      log_message "context-refiner completed, state already transitioned on approval"
+      return 1
       ;;
 
     strategic-orchestrator)
@@ -227,16 +384,22 @@ function determine_next_state() {
       fi
       ;;
 
-    bash-*|nix-*|c-*)
-      # Language agents don't auto-transition
-      # Stay in EXECUTING state until manually marked COMPLETE
+    bash-*|nix-*|c-*|python-*|critical-code-reviewer|docs-reviewer)
+      # Execution agents can run from multiple states depending on pipeline mode
+      # - CLASSIFIED: TRIVIAL mode skips all gathering
+      # - GATHERING: MODERATE mode skips refiner/orchestrator
+      # - ORCHESTRATING_ACTIVE/EXECUTING: COMPLEX mode full pipeline
+      if [[ "${current_state}" == "CLASSIFIED" || "${current_state}" == "GATHERING" ]]; then
+        echo "EXECUTING"
+        return 0
+      fi
       if [[ "${current_state}" == "EXECUTING" || "${current_state}" == "ORCHESTRATING_ACTIVE" ]]; then
         echo "EXECUTING"
         return 0
       fi
       ;;
   esac
-  
+
   # No state transition needed
   log_message "No state transition for ${agent} in ${current_state}"
   return 1
@@ -249,6 +412,7 @@ function determine_next_state() {
 #   $2 - Agent name
 #   $3 - Next state
 #   $4 - Agent context/output
+#   $5 - Extracted classification (optional, for task-classifier)
 # Globals:
 #   STATE_FILE
 #   STATE_DIR
@@ -260,13 +424,27 @@ function update_state_file() {
   local -r agent_name="$2"
   local -r next_state="$3"
   local -r agent_context="$4"
+  local -r extracted_classification="${5:-}"
   
   local -r timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   local -r current_state="$(echo "${current_state_json}" | jq -r '.state')"
   
   # Determine which context field to update
   local context_field=""
+  local pipeline_mode=""
   case "${agent_name}" in
+    task-classifier)
+      context_field="classification"
+      # Use extracted classification if available, otherwise fall back to PENDING
+      if [[ -n "${extracted_classification}" && "${extracted_classification}" != "PENDING" ]]; then
+        pipeline_mode="${extracted_classification}"
+        log_message "Setting pipeline_mode from extracted classification: ${pipeline_mode}"
+      else
+        # Fallback: main Claude must set mode manually
+        pipeline_mode="PENDING"
+        log_message "WARN: No classification extracted, setting pipeline_mode to PENDING"
+      fi
+      ;;
     context-gatherer)
       context_field="gathered"
       ;;
@@ -283,25 +461,54 @@ function update_state_file() {
   if [[ -n "${context_field}" ]]; then
     # Update specific context field
     local -r escaped_context="$(echo "${agent_context}" | jq -Rs .)"
-    new_state_json="$(echo "${current_state_json}" | jq \
-      --arg state "${next_state}" \
-      --arg timestamp "${timestamp}" \
-      --arg field "${context_field}" \
-      --argjson context "${escaped_context}" \
-      --arg agent "${agent_name}" \
-      --arg state_before "${current_state}" \
-      --arg state_after "${next_state}" \
-      '
-      .state = $state |
-      .timestamp = $timestamp |
-      .context[$field] = $context |
-      .history += [{
-        "agent": $agent,
-        "timestamp": $timestamp,
-        "state_before": $state_before,
-        "state_after": $state_after
-      }]
-      ')"
+
+    # Build jq expression based on whether we're setting pipeline_mode
+    if [[ -n "${pipeline_mode}" ]]; then
+      # task-classifier: set both context and pipeline_mode
+      new_state_json="$(echo "${current_state_json}" | jq \
+        --arg state "${next_state}" \
+        --arg timestamp "${timestamp}" \
+        --arg field "${context_field}" \
+        --argjson context "${escaped_context}" \
+        --arg agent "${agent_name}" \
+        --arg state_before "${current_state}" \
+        --arg state_after "${next_state}" \
+        --arg mode "${pipeline_mode}" \
+        '
+        .state = $state |
+        .timestamp = $timestamp |
+        .pipeline_mode = $mode |
+        .context[$field] = $context |
+        .history += [{
+          "agent": $agent,
+          "timestamp": $timestamp,
+          "state_before": $state_before,
+          "state_after": $state_after,
+          "pipeline_mode": $mode
+        }]
+        ')"
+    else
+      # Other agents: just set context
+      new_state_json="$(echo "${current_state_json}" | jq \
+        --arg state "${next_state}" \
+        --arg timestamp "${timestamp}" \
+        --arg field "${context_field}" \
+        --argjson context "${escaped_context}" \
+        --arg agent "${agent_name}" \
+        --arg state_before "${current_state}" \
+        --arg state_after "${next_state}" \
+        '
+        .state = $state |
+        .timestamp = $timestamp |
+        .context[$field] = $context |
+        .history += [{
+          "agent": $agent,
+          "timestamp": $timestamp,
+          "state_before": $state_before,
+          "state_after": $state_after
+        }]
+        ')"
+    fi
   else
     # Just update state and history (for language agents)
     new_state_json="$(echo "${current_state_json}" | jq \
@@ -338,6 +545,7 @@ function update_state_file() {
   fi
   
   log_message "State updated: ${current_state} → ${next_state}"
+  journal_write "TRANSITION" "agent=${agent_name} from=${current_state} to=${next_state}"
   return 0
 }
 
@@ -353,8 +561,11 @@ function main() {
   # Check for jq dependency
   if ! command -v jq >/dev/null 2>&1; then
     log_message "ERROR: jq is required but not installed"
+    journal_write "ERROR" "jq not installed"
     return 1
   fi
+
+  journal_write "STOP_HOOK" "SubagentStop hook invoked"
 
   # Get agent name from environment (override) if set
   local agent_name="${AGENT_NAME:-}"
@@ -363,6 +574,7 @@ function main() {
   local hook_input
   if ! hook_input="$(read_hook_input)"; then
     log_message "ERROR: Failed to read hook input"
+    journal_write "ERROR" "Failed to read hook input"
     return 1
   fi
 
@@ -380,39 +592,69 @@ function main() {
 
     if [[ -z "${agent_name}" ]]; then
       log_message "ERROR: Could not determine agent name (not in state or hook input)"
+      journal_write "ERROR" "Could not determine agent name - active_agent not set in state file"
       return 1
     fi
   fi
 
   log_message "Processing completion for agent: ${agent_name}"
-  
+  journal_write "AGENT_STOP" "agent=${agent_name}"
+
+  # Extract agent transcript path for classification extraction
+  # SubagentStop provides both transcript_path (main session) and agent_transcript_path (subagent)
+  # We need agent_transcript_path to get the classifier's actual output
+  local agent_transcript_path
+  agent_transcript_path="$(echo "${hook_input}" | jq -r '.agent_transcript_path // empty' 2>/dev/null)" || true
+  journal_write "DEBUG" "agent_transcript_path=${agent_transcript_path:-EMPTY}"
+
+  # For task-classifier, try to extract classification from agent transcript
+  local extracted_classification=""
+  if [[ "${agent_name}" == "task-classifier" && -n "${agent_transcript_path}" ]]; then
+    if extracted_classification="$(extract_classification_from_transcript "${agent_transcript_path}")"; then
+      log_message "Auto-extracted classification: ${extracted_classification}"
+      journal_write "CLASSIFICATION" "mode=${extracted_classification} (auto-extracted)"
+    else
+      log_message "WARN: Could not auto-extract classification, will set to PENDING"
+      extracted_classification="PENDING"
+    fi
+  fi
+
   # Load current state
   local current_state_json
   if ! current_state_json="$(load_current_state)"; then
     log_message "ERROR: Failed to load current state"
+    journal_write "ERROR" "Failed to load current state for ${agent_name}"
     return 1
   fi
-  
+
   local -r current_state="$(echo "${current_state_json}" | jq -r '.state')"
   log_message "Current state: ${current_state}"
-  
+
   # Determine next state
   local next_state
   if ! next_state="$(determine_next_state "${agent_name}" "${current_state}")"; then
     log_message "No state transition needed for ${agent_name}"
+    journal_write "NO_TRANSITION" "agent=${agent_name} state=${current_state}"
     return 0
   fi
-  
+
   # DEV-NOTE: SubagentStop hook doesn't provide agent output, only transcript path
   # Context extraction from transcript would be expensive, so we use a simple marker
   local agent_context="Agent ${agent_name} completed successfully"
-  
-  # Update state file
-  if ! update_state_file "${current_state_json}" "${agent_name}" "${next_state}" "${agent_context}"; then
+
+  # Update state file (pass extracted_classification for task-classifier)
+  if ! update_state_file "${current_state_json}" "${agent_name}" "${next_state}" "${agent_context}" "${extracted_classification}"; then
     log_message "ERROR: Failed to update state file"
+    journal_write "ERROR" "Failed to update state file for ${agent_name}"
     return 1
   fi
-  
+
+  # Store context in cache after context-refiner completes
+  # At this point we have both gathered and refined context
+  if [[ "${agent_name}" == "context-refiner" ]]; then
+    store_context_in_cache
+  fi
+
   log_message "Pipeline state updated successfully"
   return 0
 }

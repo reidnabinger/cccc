@@ -32,6 +32,64 @@
           {
             "type": "command",
             "command": "~/.claude-code-docs/claude-docs-helper.sh hook-check"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/pipeline-enforce.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/pipeline-enforce.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/pipeline-enforce.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/pipeline-enforce.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/pipeline-enforce.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "WebSearch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/pipeline-enforce.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/pipeline-enforce.sh"
           }
         ]
       },

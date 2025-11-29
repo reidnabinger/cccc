@@ -9,7 +9,23 @@
 set -euo pipefail
 
 readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
-readonly STATE_FILE="${HOME}/.claude/state/pipeline-state.json"
+readonly STATE_DIR="${HOME}/.claude/state"
+readonly STATE_FILE="${STATE_DIR}/pipeline-state.json"
+readonly JOURNAL_FILE="${STATE_DIR}/pipeline-journal.log"
+
+#######################################
+# Write entry to journal file for debugging
+#######################################
+function journal_write() {
+  local -r event_type="$1"
+  local -r message="$2"
+  local -r timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  mkdir -p "$(dirname "${JOURNAL_FILE}")"
+  printf '%s\t%s\t%s\t%s\n' \
+    "${timestamp}" "${event_type}" "${SCRIPT_NAME}" "${message}" \
+    >> "${JOURNAL_FILE}" 2>/dev/null || true
+}
 
 function log_message() {
   local -r message="$1"
@@ -71,6 +87,7 @@ function reset_state() {
   fi
   
   log_message "Pipeline state reset: ${current_state} → IDLE"
+  journal_write "MANUAL_RESET" "from=${current_state} reason=${reason}"
   echo "Pipeline state reset to IDLE"
   echo "Backup saved to: ${backup_file}"
   return 0
