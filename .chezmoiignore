@@ -1,0 +1,34 @@
+# Chezmoi ignore - Runtime state that should NEVER be managed
+# These paths are relative to ~/.claude/
+
+# Secrets
+.credentials.json
+*.credentials.json
+
+# Session history (large, contains conversation content)
+history.jsonl
+
+# Ephemeral session/runtime state
+todos/
+session-env/
+debug/
+file-history/
+shell-snapshots/
+statsig/
+state/
+plans/
+projects/
+reviews/
+status/
+plugins/
+architecture/
+
+# Per-session security warnings
+security_warnings_state_*.json
+
+# Editor/OS artifacts
+*.bak
+*.backup
+*~
+\#*\#
+.DS_Store
