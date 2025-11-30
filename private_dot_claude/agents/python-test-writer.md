@@ -2,7 +2,7 @@
 name: python-test-writer
 description: Write pytest tests with fixtures, parametrization, and mocking for ML/multiprocessing systems
 tools: Read, Write, Edit, Glob, Grep, Bash
-model: haiku
+model: sonnet
 ---
 
 # Python Test Writer

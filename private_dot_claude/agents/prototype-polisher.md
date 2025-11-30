@@ -2,7 +2,7 @@
 name: prototype-polisher
 description: Transforms rough prototypes into production-ready code. Use after feature-prototyper has validated a concept. Adds error handling, tests, proper structure, documentation, and addresses all shortcuts taken during prototyping.
 tools: Read, Write, Edit, Glob, Grep, Bash
-model: opus
+model: sonnet
 ---
 
 # Prototype Polisher

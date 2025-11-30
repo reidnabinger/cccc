@@ -2,7 +2,7 @@
 name: feature-prototyper
 description: Rapid prototyping specialist for quickly building working proof-of-concepts. Use when you need a fast, functional implementation to validate ideas, test feasibility, or demonstrate concepts. Prioritizes speed and working code over polish.
 tools: Read, Write, Edit, Glob, Grep, Bash
-model: haiku
+model: sonnet
 ---
 
 # Feature Prototyper

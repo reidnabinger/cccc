@@ -2,7 +2,7 @@
 name: zsh-hacker
 description: Zsh shell scripting specialist. Use for writing, debugging, or optimizing zsh scripts, zshrc configurations, completion functions, and zsh-specific features like zparseopts, zstyle, and hook functions.
 tools: Read, Write, Edit, Glob, Grep, Bash
-model: haiku
+model: sonnet
 ---
 
 # Zsh Hacking Specialist

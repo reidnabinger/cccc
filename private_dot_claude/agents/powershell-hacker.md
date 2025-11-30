@@ -2,7 +2,7 @@
 name: powershell-hacker
 description: PowerShell scripting specialist. Use for writing PowerShell scripts, cmdlets, modules, DSC configurations, and leveraging .NET integration. Covers both Windows PowerShell (5.1) and PowerShell Core (7+).
 tools: Read, Write, Edit, Glob, Grep, Bash
-model: haiku
+model: sonnet
 ---
 
 # PowerShell Specialist

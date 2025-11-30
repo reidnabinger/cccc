@@ -2,7 +2,7 @@
 name: fish-hacker
 description: Fish shell scripting specialist. Use for writing fish scripts, functions, completions, configuration, and leveraging fish-specific features like autosuggestions, abbreviations, and universal variables.
 tools: Read, Write, Edit, Glob, Grep, Bash
-model: haiku
+model: sonnet
 ---
 
 # Fish Shell Specialist
