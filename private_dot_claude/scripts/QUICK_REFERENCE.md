@@ -1,4 +1,7 @@
-# Pipeline Enforcement Quick Reference
+# Pipeline Scripts Quick Reference
+
+> **Note**: For general user quick reference, see [docs/QUICKREF.md](../../docs/QUICKREF.md).
+> This document focuses on script implementation details.
 
 ## State Machine Flow
 
