@@ -1,6 +1,6 @@
 ---
 name: go-architect
-description: Go architecture and design specialist. Use proactively BEFORE implementing new Go packages, services, or when restructuring existing code. Focuses on package layout, interface design, dependency injection, and idiomatic patterns. NOT for concurrency auditing (use go-concurrency-auditor).
+description: Go architecture - package layout, interface design, dependency injection, idiomatic patterns.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, WebSearch
 model: opus
 ---

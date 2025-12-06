@@ -1,6 +1,6 @@
 ---
 name: c-security-architect
-description: Design secure C implementations before coding. Use proactively before writing setuid wrappers, encryption code, or any security-critical C components that handle IP boundaries.
+description: C security design - setuid wrappers, encryption, privilege boundaries.
 tools: Read, Glob, Grep, Bash, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, WebFetch
 model: opus
 ---

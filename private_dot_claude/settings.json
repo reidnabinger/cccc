@@ -112,6 +112,17 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/track-agent-usage.sh"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
@@ -124,7 +135,21 @@
     "feature-dev@claude-code-plugins": true,
     "security-guidance@claude-code-plugins": true,
     "code-review@claude-code-plugins": true,
-    "explanatory-output-style@claude-code-plugins": true
+    "explanatory-output-style@claude-code-plugins": true,
+    "claude-opus-4-5-migration@claude-code-plugins": true,
+    "compounding-engineering@every-marketplace": true,
+    "agent-sdk-dev@claude-code-plugins": true,
+    "frontend-design@claude-code-plugins": true,
+    "hookify@claude-code-plugins": true,
+    "learning-output-style@claude-code-plugins": false,
+    "plugin-dev@claude-code-plugins": true,
+    "ralph-wiggum@claude-code-plugins": true,
+    "000-jeremy-content-consistency-validator@claude-code-plugins-plus": true,
+    "agent-context-manager@claude-code-plugins-plus": true,
+    "workflow-orchestrator@claude-code-plugins-plus": false,
+    "prettier-markdown-hook@claude-code-plugins-plus": true,
+    "project-curator@claude-code-marketplace": true,
+    "compound-engineering@every-marketplace": true
   },
   "alwaysThinkingEnabled": true
 }

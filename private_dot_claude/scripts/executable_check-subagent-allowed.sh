@@ -35,6 +35,38 @@ readonly UTILITY_AGENTS=(
   # Previously: "Explore", "Plan", "general-purpose"
 )
 
+# DEV-NOTE: SYSTEM_AGENTS bypass pipeline ENTIRELY - these are for:
+# - Claude Code configuration (statusline-setup)
+# - Documentation lookup (claude-code-guide)
+# - Non-code administrative tasks
+# - Pure research that fetches external info (websearch, docs)
+# These never touch the codebase, so pipeline enforcement doesn't apply
+readonly SYSTEM_AGENTS=(
+  # Claude Code config/help
+  "statusline-setup"
+  "claude-code-guide"
+
+  # Pure external research (no codebase interaction needed)
+  "websearch-specialist"
+
+  # Plugin development (creates Claude Code plugins, not project code)
+  "plugin-dev:agent-creator"
+  "plugin-dev:plugin-validator"
+  "plugin-dev:skill-reviewer"
+  "hookify:conversation-analyzer"
+
+  # Visualization/output generation (creates artifacts, not code changes)
+  "visualization"
+  "latex"
+
+  # Infrastructure/network configuration (not application code)
+  "zerotier-specialist"
+  "mikrotik-routeros-specialist"
+  "network-routing-specialist"
+  "qos-specialist"
+  "packet-capture-analyst"
+)
+
 #######################################
 # Log message to stderr with timestamp
 # Globals:
@@ -259,13 +291,33 @@ function load_pipeline_mode() {
 #######################################
 function is_utility_agent() {
   local -r agent="$1"
-  
+
   for utility_agent in "${UTILITY_AGENTS[@]}"; do
     if [[ "${agent}" == "${utility_agent}" ]]; then
       return 0
     fi
   done
-  
+
+  return 1
+}
+
+#######################################
+# Check if agent is a system agent (bypasses pipeline entirely)
+# System agents are for configuration, docs, admin tasks - not code
+# Arguments:
+#   $1 - Agent name
+# Returns:
+#   0 if system agent, 1 otherwise
+#######################################
+function is_system_agent() {
+  local -r agent="$1"
+
+  for system_agent in "${SYSTEM_AGENTS[@]}"; do
+    if [[ "${agent}" == "${system_agent}" ]]; then
+      return 0
+    fi
+  done
+
   return 1
 }
 
@@ -436,9 +488,17 @@ function transition_state_immediate() {
 function is_agent_allowed() {
   local -r agent="$1"
   local -r state="$2"
-  
+
   log_message "Checking agent: ${agent} in state: ${state}"
-  
+
+  # SYSTEM agents bypass pipeline ENTIRELY (config, docs, admin tasks)
+  if is_system_agent "${agent}"; then
+    log_message "SYSTEM AGENT: ${agent} - bypassing pipeline"
+    journal_write "SYSTEM_BYPASS" "agent=${agent} state=${state}"
+    approve_agent "${agent}" "${state}"
+    return
+  fi
+
   # Utility agents bypass all restrictions
   if is_utility_agent "${agent}"; then
     approve_agent "${agent}" "${state}"
@@ -458,8 +518,11 @@ function is_agent_allowed() {
   #     - MODERATE: execution agents OR utility agents (skip refiner)
   #     - COMPLEX/EXPLORATORY: context-refiner OR utility agents
   #   REFINING → strategic-orchestrator (triggers → ORCHESTRATING_ACTIVE)
-  #   ORCHESTRATING_ACTIVE → language-specific agents (orchestrator running)
-  #   EXECUTING → language-specific agents (final execution phase)
+  #   ORCHESTRATING_ACTIVE → execution/review agents (orchestrator running)
+  #   EXECUTING → execution/review agents (orchestrator deploying agents)
+  #     - Orchestrator handles review internally (execute→evaluate→fix loop)
+  #     - Orchestrator invokes context-gatherer if more context needed → GATHERING
+  #     - Orchestrator completes → COMPLETE
   #   COMPLETE → task-classifier or context-gatherer to restart
   #
   # Pipeline modes (set by task-classifier):
@@ -470,6 +533,9 @@ function is_agent_allowed() {
   #
   # Utility agents (Explore, Plan, general-purpose) are allowed AFTER
   # context-gatherer but NOT as a substitute for starting the pipeline
+  #
+  # NOTE: No separate REVIEWING state. The strategic-orchestrator handles
+  # review internally, deploying specialized reviewers when needed.
 
   # Check if this is a utility agent (allowed after initial classification)
   local is_utility=false
@@ -487,6 +553,18 @@ function is_agent_allowed() {
   local is_sub_gatherer=false
   if [[ "${agent}" =~ ^(architecture-gatherer|dependency-gatherer|pattern-gatherer|history-gatherer)$ ]]; then
     is_sub_gatherer=true
+  fi
+
+  # Check if this is a review agent (used in REVIEWING state)
+  # Review agents validate implementation quality after execution
+  local is_review_agent=false
+  if [[ "${agent}" =~ ^(bash-security-reviewer|bash-style-enforcer|bash-tester)$ ]] || \
+     [[ "${agent}" =~ ^(c-security-reviewer|c-memory-safety-auditor|c-race-condition-auditor|c-privilege-auditor)$ ]] || \
+     [[ "${agent}" =~ ^(nix-reviewer)$ ]] || \
+     [[ "${agent}" =~ ^(python-quality-enforcer|python-security-reviewer|python-test-writer)$ ]] || \
+     [[ "${agent}" =~ ^(critical-code-reviewer|docs-reviewer)$ ]] || \
+     [[ "${agent}" =~ ^pr-review-toolkit: ]]; then
+    is_review_agent=true
   fi
 
   # Load pipeline mode for routing decisions
@@ -614,11 +692,20 @@ function is_agent_allowed() {
       ;;
 
     EXECUTING)
-      # strategic-orchestrator completed, language agents are executing
-      if [[ "${agent}" =~ ^(bash-|nix-|c-) || "${is_utility}" == "true" ]]; then
+      # Orchestrator is running and deploying execution/review agents
+      # Also allow context-gatherer for remediation (orchestrator decides it needs more context)
+      if [[ "${agent}" =~ ^(bash-|nix-|c-|python-) || "${is_utility}" == "true" || "${is_review_agent}" == "true" ]]; then
         approve_agent "${agent}" "${state}"
+      elif [[ "${agent}" == "context-gatherer" ]]; then
+        # Remediation cycle: orchestrator determined more context is needed
+        log_message "Remediation cycle: EXECUTING → GATHERING"
+        if ! transition_state_immediate "GATHERING" "${agent}" "${state}"; then
+          log_message "WARN: Failed to transition to GATHERING for remediation, approving anyway"
+        fi
+        journal_write "REMEDIATION" "Orchestrator needs more context, cycling back to GATHERING"
+        approve_agent "${agent}" "GATHERING"
       else
-        block_agent "${agent}" "${state}" "Only language-specific agents (bash-*, nix-*, c-*) or utility agents allowed during execution. Current state: EXECUTING"
+        block_agent "${agent}" "${state}" "Only execution agents, review agents, context-gatherer (for remediation), or utility agents allowed during execution. Current state: EXECUTING"
       fi
       ;;
 

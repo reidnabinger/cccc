@@ -1,6 +1,6 @@
 ---
 name: prototype-polisher
-description: Transforms rough prototypes into production-ready code. Use after feature-prototyper has validated a concept. Adds error handling, tests, proper structure, documentation, and addresses all shortcuts taken during prototyping.
+description: Transform prototypes to production - add error handling, tests, proper structure.
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet
 ---

@@ -10,8 +10,13 @@
 #   context-gatherer completed → IDLE → GATHERING
 #   context-refiner completed → GATHERING → REFINING
 #   strategic-orchestrator approved → REFINING → ORCHESTRATING_ACTIVE (immediate, in check-subagent-allowed.sh)
-#   strategic-orchestrator completed → ORCHESTRATING_ACTIVE → EXECUTING
-#   language agents completed → EXECUTING (stays in EXECUTING until COMPLETE)
+#   strategic-orchestrator completed (in ORCHESTRATING_ACTIVE) → EXECUTING
+#   execution/review agents completed → EXECUTING (stays in EXECUTING)
+#   strategic-orchestrator completed (in EXECUTING) → COMPLETE
+#   context-gatherer (remediation) → EXECUTING → GATHERING (handled in check-subagent-allowed.sh)
+#
+# NOTE: No separate REVIEWING state. The orchestrator handles review internally,
+# deploying specialized reviewers as needed and only completing when satisfied.
 
 set -euo pipefail
 
@@ -374,11 +379,23 @@ function determine_next_state() {
       ;;
 
     strategic-orchestrator)
-      # DEV-NOTE: When strategic-orchestrator completes, transition from
-      # ORCHESTRATING_ACTIVE to EXECUTING. The ORCHESTRATING_ACTIVE state
-      # was set when the orchestrator was approved (immediate transition).
+      # DEV-NOTE: When strategic-orchestrator completes, the next state depends
+      # on the current state:
+      #
+      # ORCHESTRATING_ACTIVE → EXECUTING (orchestrator started deploying agents)
+      # EXECUTING → COMPLETE (orchestrator finished successfully)
+      #
+      # The orchestrator handles review internally. It only completes when all
+      # 5 review criteria are satisfied. If it needs more context, it invokes
+      # context-gatherer (which transitions to GATHERING via check-subagent-allowed.sh).
       if [[ "${current_state}" == "ORCHESTRATING_ACTIVE" ]]; then
         echo "EXECUTING"
+        return 0
+      fi
+      if [[ "${current_state}" == "EXECUTING" ]]; then
+        # Orchestrator completed in EXECUTING = all work done, reviews passed
+        log_message "Orchestrator completed successfully, transitioning to COMPLETE"
+        echo "COMPLETE"
         return 0
       fi
       # Handle legacy case where state might still be REFINING (shouldn't happen
@@ -390,8 +407,16 @@ function determine_next_state() {
       fi
       ;;
 
-    bash-*|nix-*|c-*|python-*|critical-code-reviewer|docs-reviewer)
-      # Execution agents can run from multiple states depending on pipeline mode
+    # Execution and review agents - all stay in EXECUTING
+    # The orchestrator handles the execute→evaluate→fix loop internally
+    bash-*|nix-*|c-*|python-*| \
+    bash-security-reviewer|bash-style-enforcer|bash-tester| \
+    c-security-reviewer|c-memory-safety-auditor|c-race-condition-auditor|c-privilege-auditor| \
+    nix-reviewer| \
+    python-quality-enforcer|python-security-reviewer|python-test-writer| \
+    critical-code-reviewer|docs-reviewer| \
+    pr-review-toolkit:*)
+      # Execution and review agents can run from multiple states depending on pipeline mode
       # - CLASSIFIED: TRIVIAL mode skips all gathering
       # - GATHERING: MODERATE mode skips refiner/orchestrator
       # - ORCHESTRATING_ACTIVE/EXECUTING: COMPLEX mode full pipeline
@@ -400,8 +425,9 @@ function determine_next_state() {
         return 0
       fi
       if [[ "${current_state}" == "EXECUTING" || "${current_state}" == "ORCHESTRATING_ACTIVE" ]]; then
-        echo "EXECUTING"
-        return 0
+        # Stay in EXECUTING - orchestrator controls the loop
+        log_message "Agent ${agent} completed, staying in EXECUTING"
+        return 1  # No state change
       fi
       ;;
   esac

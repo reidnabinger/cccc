@@ -1,6 +1,6 @@
 ---
 name: docs-reviewer
-description: Use this agent when documentationn needs to be created, modified, or updated for accuracy, necessity, consistency, and proper placement. This includes README files, API documentation, code comments converted to docs, configuration guides, and any other project documentation. The agent should be used proactively after documentation changes are made, before they are committed.\n\nExamples:\n- User: "I've updated the README to include the new installation steps"\n  Assistant: "Let me use the docs-reviewer agent to review these documentation changes for accuracy and completeness."\n  \n- User: "Added API documentation for the new endpoint"\n  Assistant: "I'll launch the docs-reviewer agent to verify this documentation is clear, accurate, and well-placed."\n  \n- User: "Updated the configuration guide with the new environment variables"\n  Assistant: "Using the docs-reviewer agent to check if this information is necessary, accurate, and doesn't duplicate existing docs."
+description: Review documentation for accuracy, necessity, consistency, and proper placement.
 model: haiku
 color: green
 ---

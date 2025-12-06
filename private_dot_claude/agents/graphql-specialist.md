@@ -1,6 +1,6 @@
 ---
 name: graphql-specialist
-description: GraphQL API expert. Use when designing GraphQL schemas, implementing resolvers, setting up Apollo Federation, or optimizing N+1 queries with DataLoader. For REST/gRPC API design, use api-design-architect instead.
+description: GraphQL - schema design, resolvers, Apollo Federation, DataLoader N+1 optimization.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, WebSearch
 model: sonnet
 ---

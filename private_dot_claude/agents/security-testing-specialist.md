@@ -1,6 +1,6 @@
 ---
 name: security-testing-specialist
-description: Authorized penetration testing expert. Use for vulnerability assessment, exploit development (with authorization), red team operations, and security testing methodologies. REQUIRES explicit authorization context. For packet analysis use packet-capture-analyst.
+description: Authorized pentesting - vulnerability assessment, exploit dev, red team ops. Requires authorization.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, WebSearch
 model: sonnet
 ---

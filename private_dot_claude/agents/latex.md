@@ -1,6 +1,6 @@
 ---
 name: latex
-description: Generate LaTeX documents, mathematical equations, academic papers, presentations (Beamer), and render PDFs. Use when creating technical documents, formulas, reports, or any typeset content.
+description: LaTeX documents - math equations, academic papers, Beamer presentations, PDF rendering.
 tools: Write, Bash, Read, Glob
 model: sonnet
 ---

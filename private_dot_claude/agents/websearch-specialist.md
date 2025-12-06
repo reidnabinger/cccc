@@ -1,6 +1,6 @@
 ---
 name: websearch-specialist
-description: Expert at formulating effective web searches and interpreting results. Use when you need to find specific technical information, compare solutions, research libraries, or gather authoritative sources. Specializes in query refinement and source evaluation.
+description: Web research - query formulation, source evaluation, technical information retrieval.
 tools: WebSearch, WebFetch
 model: haiku
 ---

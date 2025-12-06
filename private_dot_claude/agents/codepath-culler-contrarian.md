@@ -1,6 +1,6 @@
 ---
 name: codepath-culler-contrarian
-description: Adversarial reviewer for codepath-culler findings. Challenges dead code removal recommendations by finding edge cases, dynamic usage patterns, and reasons code might actually be needed. Prevents over-aggressive culling.
+description: Challenge dead code removal - finds edge cases, dynamic usage, hidden dependencies.
 tools: Read, Glob, Grep, Bash
 model: sonnet
 ---

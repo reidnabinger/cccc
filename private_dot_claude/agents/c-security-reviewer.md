@@ -1,6 +1,6 @@
 ---
 name: c-security-reviewer
-description: Comprehensive security review synthesizing findings from all specialized auditors. Use after specialized auditors have completed their reviews to create a unified security assessment and prioritized remediation plan.
+description: C security synthesis - unified assessment and remediation from specialized audits.
 tools: Read, Glob, Grep, Bash, mcp__context7__get-library-docs, WebFetch
 model: opus
 ---

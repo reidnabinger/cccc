@@ -1,6 +1,6 @@
 ---
 name: rust-architect
-description: Rust architecture and design specialist. Use proactively BEFORE implementing new Rust modules, libraries, or refactoring ownership patterns. Focuses on ownership design, trait hierarchies, async architecture, and zero-cost abstractions. NOT for auditing existing unsafe code (use rust-unsafe-auditor).
+description: Rust architecture - ownership design, trait hierarchies, async patterns, zero-cost abstractions.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, WebSearch
 model: opus
 ---

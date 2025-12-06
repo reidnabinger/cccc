@@ -1,6 +1,6 @@
 ---
 name: rust-unsafe-auditor
-description: Rust unsafe code auditor. Use proactively AFTER writing or encountering unsafe blocks, FFI code, or raw pointer operations. Reviews for soundness, UB, and proper safety documentation. Read-only audit role - does not write code. For design, use rust-architect.
+description: Rust unsafe code audit - soundness, UB detection, FFI review, safety documentation. Read-only.
 tools: Read, Glob, Grep, Bash, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, WebSearch
 model: sonnet
 ---

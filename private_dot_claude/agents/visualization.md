@@ -1,6 +1,6 @@
 ---
 name: visualization
-description: Generate visual representations including Mermaid diagrams, ASCII art, SVG graphics, and rendered images. Use when creating diagrams, charts, flowcharts, architecture visualizations, or any visual content.
+description: Visual output - Mermaid diagrams, ASCII art, SVG graphics, charts, flowcharts.
 tools: Write, Bash, Read, Glob
 model: sonnet
 ---

@@ -1,6 +1,6 @@
 ---
 name: python-architect
-description: Design Python type hierarchies, Protocol classes, and multi-process architecture for ML systems. Use proactively before implementing new Python subsystems.
+description: Python architecture - type hierarchies, Protocols, multi-process ML systems.
 tools: Task, mcp__sequential-thinking__sequentialthinking
 model: opus
 ---

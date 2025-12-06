@@ -1,6 +1,6 @@
 ---
 name: codepath-culler
-description: Identifies dead code, unused imports, unreachable code paths, and deprecated functionality that can be safely removed. Use to reduce codebase complexity and eliminate maintenance burden of unused code.
+description: Find dead code, unused imports, unreachable paths for safe removal.
 tools: Read, Glob, Grep, Bash
 model: haiku
 ---

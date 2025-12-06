@@ -1,6 +1,6 @@
 ---
 name: typescript-specialist
-description: TypeScript type system expert. Use when dealing with complex generics, conditional types, mapped types, branded types, or type-level programming. Also use for tsconfig tuning and strict mode adoption. NOT for general JS/TS application logic.
+description: TypeScript types - generics, conditionals, mapped types, branded types, tsconfig.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, WebSearch
 model: sonnet
 ---

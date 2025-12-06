@@ -1,6 +1,6 @@
 ---
 name: text-manipulator
-description: Text processing specialist for regex patterns, sed/awk transformations, structured text parsing, and data extraction. Use for log analysis, CSV/JSON manipulation, search-and-replace operations, and format conversions.
+description: Text processing - regex, sed/awk, log analysis, CSV/JSON, format conversions.
 tools: Read, Write, Edit, Grep, Bash
 model: haiku
 ---

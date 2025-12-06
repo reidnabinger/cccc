@@ -1,6 +1,6 @@
 ---
 name: c-security-coder
-description: Write secure C code following security architecture specifications. Use after c-security-architect has designed the implementation. Specializes in security-critical code with memory safety and privilege management.
+description: Secure C implementation - memory safety, privilege management, defense in depth.
 tools: Read, Glob, Grep, Bash, Write, Edit, mcp__context7__get-library-docs
 model: sonnet
 ---

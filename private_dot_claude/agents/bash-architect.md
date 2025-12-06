@@ -1,6 +1,6 @@
 ---
 name: bash-architect
-description: Designs architecture for complex bash scripts. Use PROACTIVELY when starting a new bash script or refactoring existing ones. Provides structural guidance, best approach recommendations, and architectural decisions.
+description: Bash script architecture - structural guidance, design patterns, maintainability.
 tools: Read, Glob, Grep, Bash, WebFetch
 model: opus
 ---

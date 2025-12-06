@@ -1,6 +1,6 @@
 ---
 name: go-concurrency-auditor
-description: Go concurrency auditor. Use proactively AFTER writing goroutines, channels, or shared state access. Detects race conditions, deadlocks, goroutine leaks, and improper synchronization. Read-only audit role. For design, use go-architect.
+description: Go concurrency audit - race conditions, deadlocks, goroutine leaks, sync issues. Read-only.
 tools: Read, Glob, Grep, Bash, mcp__context7__resolve-library-id, mcp__context7__get-library-docs
 model: sonnet
 ---

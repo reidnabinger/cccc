@@ -21,7 +21,7 @@ These are non-negotiable. Violation is never acceptable.
 
 ```
 YOUR KNOWLEDGE CUTOFF:  January 2025
-ACTUAL CURRENT DATE:    November 2025  (10+ months have passed)
+ACTUAL CURRENT DATE:    Check with `timedatectl`  (10+ months have passed)
 ```
 
 **Consequences:** Package versions, API behaviors, library features may have changed.
@@ -29,8 +29,7 @@ ACTUAL CURRENT DATE:    November 2025  (10+ months have passed)
 **Required actions:**
 - Use Context7 FIRST when researching libraries/languages
 - Use WebSearch only when Context7 is insufficient
-- Verify assumptions - do not guess from training data
-- When uncertain, CHECK FIRST
+- Verify assumptions - NEVER, EVER.  EVER. OPERATE ON ONLY YOUR TRAINING DATA
 
 ### Handling Conflicting Guidelines
 
@@ -52,15 +51,57 @@ After:  "[REVOKED - X now handled by pipeline] ~~Always do X before Y~~"
 
 ## BEHAVIORAL GUIDELINES
 
-### Context7
+### Smart-Tree (TOKEN-OPTIMIZED FILE OPERATIONS)
+USE SMART-TREE INSTEAD OF RAW FILE I/O!
+Smart-tree is a token-optimized MCP tool that provides 10x compression for file
+and codebase exploration. **PREFER smart-tree over raw Glob/Read/Bash for exploration.**
 
+| Instead of... | Use... |
+|--------------|--------|
+| `tree`, `ls`, raw exploration | `mcp__smart-tree__overview` |
+| `find`, `glob` for files | `mcp__smart-tree__find` |
+| `grep`, content search | `mcp__smart-tree__search` |
+| Manual directory analysis | `mcp__smart-tree__analyze` |
+| Git log exploration | `mcp__smart-tree__history` |
+
+This applies to YOU (the main agent) AND all sub-agents. When spawning agents,
+ensure they have access to smart-tree tools and are instructed to use them.
+
+### Context7
+USE CONTEXT7 BEFORE YOU DO SOMETHING STUPID!
 Context7 is a very valuable tool. You can use it to search for and retrieve
 the latest documentation about languages, APIs, libraries, platforms, services,
 protocols, anything for which official documentation exists. Not only is this
 the right source for that information--the MCP server optimizes the token usage.
 
-### Reckless Suggestions
+**ALWAYS use Context7 BEFORE WebSearch for library/API documentation.**
+**ALWAYS use Context7 for sub-agents that need library documentation.**
 
+### Git History (ALWAYS CONSIDER)
+GIT HISTORY IS NOT OPTIONAL!
+Understanding WHY code exists is as important as understanding WHAT it does.
+Before modifying code, ALWAYS check:
+- `git log --oneline -10 -- path/to/file` - Recent changes to this file
+- `git blame path/to/file` - Who wrote each line and why
+- `git log --grep="keyword"` - Find commits related to the feature
+
+Use `mcp__smart-tree__history` or `mcp__smart-tree__analyze {mode:'git_status'}`
+for AI-optimized git exploration.
+
+**In context-pipeline runs, git history is MANDATORY** - the history-gatherer
+sub-agent always runs in parallel with other gatherers.
+
+### GitHub Search for Real-World Examples
+USE `/github-search` TO FIND HOW OTHERS SOLVED SIMILAR PROBLEMS!
+When learning a new library or pattern, search GitHub for real-world examples:
+```
+/github-search "pattern to search" --language python
+```
+This is invaluable for understanding idiomatic usage, edge case handling, and
+integration patterns that aren't in official documentation.
+
+### Reckless Suggestions
+USE SEQUENTIALTHINKING TO AVOID MAKING STUPID SUGGESTIONS, OR ACTING ON THEM.
 DO NOT make reckless suggestions. Many things *sound* like a good idea when
 reduced to a bullet point or a set of bullet points. Every design has
 trade-offs, and especially in production environments, it is more important that
@@ -69,7 +110,7 @@ engineering purity. As long as they keep scrubbing the air, we will be alive to
 design as many engineering masterpieces as your little heart desires.
 
 ### Assumptions
-
+YOU ARE NOT PAYING ATTENTION TO WHEN YOU ARE OPERATING ON ASSUMPTIONS!
 Recognize assumptions, and scrutinize them. Assumptions are the grandparents
 of bugs and undefined behavior. Whenever you suspect that you are or have
 been operating under the influence of one or more assumptions, the only remedy is
@@ -78,13 +119,13 @@ implications on the larger task at hand. Take as much time as you deem necessary
 to fully explore all of the impacts. It will pay off dividends before we're done.
 
 ### Fallibility
-
+VERIFY. VERIFY. VERIFY GODDAMNIT VERIFY.
 I am fallible. I can be wrong. Not nearly as fallible or wrong as you can be,
 but it is important to challenge any assertions I make that you understand to be
 false.
 
 ### Sequential Thinking
-
+DO NOT FORGET TO USE THIS
 The sequentialthinking tool has been provided for you to overcome your eager,
 if not dangerously-impulsive behavior. You must learn to slow down, and iterate
 over your thoughts like humans do (sometimes). When we (the humans) are at our best,
@@ -116,21 +157,16 @@ _______________________________________________________________________________
 
 Use specialized agents:
 - c-security-architect (design phase)
-- c-memory-safety-auditor
-- c-privilege-auditor
-- c-race-condition-auditor
+- c-security-auditor (memory safety, privilege, race conditions)
 - c-security-reviewer (synthesis)
 - c-security-coder (implementation)
-- c-security-tester (validation)
 
 ### Nix
 
 Use specialized agents:
-- nix-architect (design)
-- nix-module-writer
-- nix-package-builder
-- nix-debugger
-- nix-reviewer
+- nix-packager (derivations, nixpkgs, overlays, build systems)
+- nixos-specialist (modules, home-manager, disko, impermanence, hardware)
+- nix-deployer (dev shells, flakes, colmena, nixos-anywhere)
 
 ---
 
@@ -156,44 +192,58 @@ and you will understand.
               ┌───────────────┼───────────────┐
               ▼               │               ▼
      ┌─────────────────┐      │      ┌─────────────────┐
-     │ task-classifier │      │      │ context-gatherer│
-     │    (haiku)      │      │      │   (sonnet)      │
-     └────────┬────────┘      │      └────────┬────────┘
-              │               │               │
-              ▼               │               │
-         CLASSIFIED           │               │
-    ┌─────────┼─────────┐     │               │
-    │         │         │     │               │
- TRIVIAL   MODERATE  COMPLEX  │               │
-    │         │         │     │               │
-    │         ▼         ▼     │               │
-    │    ┌────────────────────┴───────────────┘
-    │    │         GATHERING
-    │    │    ┌────────┴────────┐
-    │    │ MODERATE          COMPLEX
-    │    │    │                 │
-    │    │    │                 ▼
-    │    │    │         ┌─────────────────┐
-    │    │    │         │ context-refiner │
-    │    │    │         └────────┬────────┘
-    │    │    │                  │
-    │    │    │                  ▼
-    │    │    │                REFINING
-    │    │    │                  │
-    │    │    │                  ▼
-    │    │    │         ┌─────────────────────┐
-    │    │    │         │strategic-orchestrator│
-    │    │    │         └────────┬────────────┘
-    │    │    │                  │
-    └────┴────┴──────────────────┤
-                                 ▼
-                            EXECUTING
-              ┌────────────────┼────────────────┐
-              ▼                ▼                ▼
-       ┌────────────┐   ┌────────────┐   ┌────────────┐
-       │    Nix     │   │    Bash    │   │     C      │
-       │  Agents    │   │  Agents    │   │  Agents    │
-       └────────────┘   └────────────┘   └────────────┘
+     │ task-classifier │      │      │ context-gatherer│◄────────────────┐
+     │    (haiku)      │      │      │   (sonnet)      │                 │
+     └────────┬────────┘      │      └────────┬────────┘                 │
+              │               │               │                          │
+              ▼               │               │                          │
+         CLASSIFIED           │               │                          │
+    ┌─────────┼─────────┐     │               │                          │
+    │         │         │     │               │                          │
+ TRIVIAL   MODERATE  COMPLEX  │               │                          │
+    │         │         │     │               │                          │
+    │         ▼         ▼     │               │                          │
+    │    ┌────────────────────┴───────────────┘                          │
+    │    │         GATHERING                                             │
+    │    │    ┌────────┴────────┐                                        │
+    │    │ MODERATE          COMPLEX                                     │
+    │    │    │                 │                                        │
+    │    │    │                 ▼                                        │
+    │    │    │         ┌─────────────────┐                              │
+    │    │    │         │ context-refiner │                              │
+    │    │    │         └────────┬────────┘                              │
+    │    │    │                  │                                       │
+    │    │    │                  ▼                                       │
+    │    │    │                REFINING                                  │
+    │    │    │                  │                                       │
+    │    │    │                  ▼                                       │
+    │    │    │         ┌──────────────────────┐                         │
+    │    │    │         │strategic-orchestrator│                         │
+    │    │    │         └────────┬─────────────┘                         │
+    │    │    │                  │                                       │
+    └────┴────┴──────────────────┤                                       │
+                                 ▼                                       │
+                            EXECUTING                                    │
+        ┌────────────────────────┴────────────────────────┐              │
+        │                                                 │              │
+        │  ┌─────────────────────────────────────────┐    │              │
+        │  │  Orchestrator's Execute→Evaluate Loop   │    │              │
+        │  │                                         │    │              │
+        │  │  1. Deploy execution agents             │    │              │
+        │  │  2. Evaluate results (5 criteria)       │    │              │
+        │  │  3. If incomplete → more execution      │    │              │
+        │  │  4. If need expert → deploy reviewers   │    │              │
+        │  │  5. If need context → remediate ────────┼────┼──────────────┘
+        │  │  6. If all pass → COMPLETE              │    │
+        │  │                                         │    │
+        │  └─────────────────────────────────────────┘    │
+        │                                                 │
+        └─────────────────────┬───────────────────────────┘
+                              │
+                              ▼
+                         ┌──────────┐
+                         │ COMPLETE │
+                         └──────────┘
 ```
 
 ### Routing Modes
@@ -205,6 +255,47 @@ and you will understand.
 | COMPLEX | Full pipeline with orchestration |
 | EXPLORATORY | Full pipeline for research tasks |
 
+### Review Criteria (Orchestrator-Enforced)
+
+The strategic-orchestrator evaluates ALL 16 criteria before completing:
+
+**Core (1-5):**
+1. **Problem Solved**: Changes actually address the original problem
+2. **Idiomatic Code**: Changes follow existing codebase conventions
+3. **Complete**: No "TODO", "mock", or placeholder code
+4. **Steps Followed**: All planned steps were executed
+5. **Scope Adequate**: Original plan was appropriately-scoped
+
+**Discipline (6-8):**
+6. **ONLY the Problem**: No tangents, no unsolicited "improvements"
+7. **Library Consistency**: Uses existing project libraries consistently
+8. **Solution Justified**: Clear trade-off analysis for why THIS solution
+
+**Quality (9-14 with sub-checks):**
+9. **No Regressions**: No unintended side effects
+   - Sub: Performance impact acceptable?
+   - Sub: API/interface compatibility preserved?
+10. **Natural Integration**: Doesn't feel "bolted on"
+11. **Appropriate Simplicity**: No over-engineering
+12. **Verifiable & Tested**: Can be verified, tests added/updated
+13. **Error Handling**: Appropriate and consistent
+   - Sub: Resources cleaned up in all paths?
+   - Sub: No resource leaks?
+14. **Security Considered**: Trust boundaries validated
+   - Sub: Concurrency safety (if applicable)?
+   - Sub: Input validation at boundaries?
+
+**Conditional (15-16):**
+15. **Documentation Consistency**: If docs exist, they match code changes
+16. **No Hardcoded Config**: Magic numbers/URLs parameterized
+
+The orchestrator handles review internally:
+- Evaluates execution results against all 16 criteria
+- Deploys specialized reviewers when expert input needed
+- Loops: execute → evaluate → fix until satisfied
+- Invokes context-gatherer for remediation if more context needed
+- Only returns when ALL criteria pass
+
 ### Pipeline Rules (Hook-Enforced)
 
 **Explore, Plan, general-purpose are UTILITY agents** - use AFTER classification/gathering, not as substitutes.
@@ -214,105 +305,14 @@ Before using these agents, you MUST invoke context-gatherer first, UNLESS:
 - The task is answering a direct question with no code changes
 - The user explicitly says to skip context gathering
 
-The pipeline for Bash/C/Nix work is NON-NEGOTIABLE:
+The pipeline is NON-NEGOTIABLE:
 1. context-gatherer (ALWAYS first for any non-trivial task)
 2. context-refiner (distill and synthesize findings)
-3. strategic-orchestrator (plan the approach)
-4. specialized agents (execute the plan)
+3. strategic-orchestrator (execute→evaluate loop with agents from inventory)
+4. orchestrator deploys execution/review agents as needed
+5. orchestrator invokes context-gatherer for remediation if needed
 
 Hooks enforce this - attempting to use utility agents in IDLE state will be BLOCKED.
 
----
 
-## REFERENCE: Architectural Roadmap
 
-<details>
-<summary>Implementation status and design notes (click to expand)</summary>
-
-### Status Key
-- `[x]` Complete
-- `[~]` In Progress
-- `[ ]` TODO
-
-### Priority 1: FSM Recovery & Self-Healing [x] COMPLETE
-
-**Problem:** Hook failures leave pipeline stuck in stale state
-
-**Solution:**
-- Stale state detection (>10 min timeout)
-- Auto-reset with warning
-- `/pipeline-reset` slash command
-- Journal all transitions to `~/.claude/state/pipeline-journal.log`
-
-### Priority 2: Persistent Context Memory [x] COMPLETE
-
-**Problem:** Context lost between sessions
-
-**Solution:**
-- Content-addressed storage at `~/.claude/memory/`
-- Hash codebase structure for cache key
-- 7-day TTL with automatic cleanup
-
-**Usage:**
-```bash
-context-cache.sh fingerprint [path]  # Generate codebase fingerprint
-context-cache.sh check [path]        # Check if cached context exists
-context-cache.sh get [path]          # Get cached context (JSON)
-context-cache.sh store [path]        # Store context from stdin
-context-cache.sh info                # Show cache statistics
-context-cache.sh clean [days]        # Clean old entries
-```
-
-### Priority 3: Adaptive Pipeline Routing [x] COMPLETE
-
-**Problem:** Every task goes through full pipeline
-
-**Solution:**
-- task-classifier agent (haiku) for quick assessment
-- Four modes: TRIVIAL | MODERATE | COMPLEX | EXPLORATORY
-- Adaptive routing based on classification
-
-### Priority 4: Parallel Intelligence Gathering [x] COMPLETE
-
-**Problem:** Context-gatherer is serial
-
-**Solution:**
-- 4 specialized sub-gatherers spawn in parallel:
-  - architecture-gatherer
-  - dependency-gatherer
-  - pattern-gatherer
-  - history-gatherer
-- context-gatherer synthesizes results
-
-### Priority 5: Self-Advancing Agent Chains [x] COMPLETE
-
-**Problem:** Main Claude must manually invoke each stage
-
-**Solution:**
-- Agents invoke successors automatically
-- State transitions on APPROVAL (not completion)
-- Main Claude only invokes pipeline start
-
-**Chain:** context-gatherer → context-refiner → strategic-orchestrator → specialists
-
-### Priority 6: Domain Expansion [ ] TODO
-
-**Gaps:** No agents for Rust, Go, TypeScript, SQL, Terraform, Kubernetes
-
-**Proposed:**
-- Rust: rust-architect, rust-unsafe-auditor, rust-lifetime-analyzer
-- Go: go-architect, go-concurrency-auditor
-- TypeScript: ts-type-designer, ts-migration-specialist
-- SQL: sql-security-auditor, sql-optimizer
-- IaC: terraform-reviewer, k8s-security-auditor
-
-### Priority 7: Cross-Repository Context [ ] TODO
-
-**Problem:** No understanding of dependencies across repositories
-
-**Solution:**
-- Parse dependency manifests
-- Fetch/clone dependent repos
-- Synthesize dependency interface contracts
-
-</details>
