@@ -13,30 +13,28 @@ You must now invoke the pipeline. Choose ONE approach based on task complexity:
 
 ### Option A: Quick Classification (Recommended)
 
-If you can assess complexity from the user's request, use the task-classifier first:
+If you can assess complexity from the user's request, **use the Task tool** with task-classifier:
 
-```
-Task(
-  subagent_type="task-classifier",
-  model="haiku",
-  description="Classify task complexity",
-  prompt="Classify this task: [USER'S ORIGINAL REQUEST]"
-)
-```
+| Parameter | Value |
+|-----------|-------|
+| `subagent_type` | `"task-classifier"` |
+| `model` | `"haiku"` |
+| `description` | `"Classify task complexity"` |
+| `prompt` | `"Classify this task: [USER'S ORIGINAL REQUEST]"` |
 
 The classifier returns JSON with `classification` (TRIVIAL/MODERATE/COMPLEX/EXPLORATORY) that determines the pipeline path.
 
 ### Option B: Full Pipeline (For Complex/Uncertain Tasks)
 
-If the task is clearly complex or you're unsure, skip classification and go straight to full context gathering:
+If the task is clearly complex or you're unsure, **use the Task tool** with context-gatherer:
 
-```
-Task(
-  subagent_type="context-gatherer",
-  description="Gather context for task",
-  prompt="Gather all relevant context for: [USER'S ORIGINAL REQUEST]"
-)
-```
+| Parameter | Value |
+|-----------|-------|
+| `subagent_type` | `"context-gatherer"` |
+| `description` | `"Gather context for task"` |
+| `prompt` | `"Gather all relevant context for: [USER'S ORIGINAL REQUEST]"` |
+
+**IMPORTANT**: Make an actual Task tool invocation. Do NOT output text that looks like a function call.
 
 ## Pipeline Flow (Automatic After Start)
 

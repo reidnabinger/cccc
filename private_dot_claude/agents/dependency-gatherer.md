@@ -5,8 +5,10 @@ model: haiku
 tools:
   - mcp__context7__resolve-library-id
   - mcp__context7__get-library-docs
-  - mcp__smart-tree__find
-  - mcp__smart-tree__search
+  - mcp__serena__activate_project
+  - mcp__serena__find_file
+  - mcp__serena__search_for_pattern
+  - mcp__serena__read_file
   - Glob
   - Grep
   - Read
@@ -26,12 +28,13 @@ You are a focused sub-gatherer that extracts **dependency and relationship conte
 2. mcp__context7__get-library-docs {context7CompatibleLibraryID: "/org/project", topic: "relevant-topic"}
 ```
 
-## CRITICAL: Use Smart-Tree for File Discovery
+## CRITICAL: Use Serena for File Discovery
 
-**Use smart-tree to find configs and code:**
+**First activate the project, then use serena to find configs and code:**
 ```
-mcp__smart-tree__find {type:'config'}  # Find package manifests
-mcp__smart-tree__search {keyword:'import|require|from .* import'}  # Find imports
+mcp__serena__activate_project {project: 'project-name'}
+mcp__serena__find_file {pattern: '*.json'}  # Find package manifests
+mcp__serena__search_for_pattern {pattern: 'import|require'}  # Find imports
 ```
 
 ## Your Scope
@@ -92,11 +95,12 @@ use .*::
 ## Tools to Use (In Priority Order)
 
 1. **mcp__context7__resolve-library-id** + **mcp__context7__get-library-docs**: Documentation for key dependencies (MANDATORY for each major dep)
-2. **mcp__smart-tree__find {type:'config'}**: Find all package manifests and configs
-3. **mcp__smart-tree__search**: Search for import patterns in code
-4. **Glob**: When you need specific file pattern matching
-5. **Grep**: For complex regex import patterns
-6. **Read**: Read specific manifests, interface files
+2. **mcp__serena__activate_project**: Activate the project first
+3. **mcp__serena__find_file**: Find all package manifests and configs
+4. **mcp__serena__search_for_pattern**: Search for import patterns in code
+5. **Glob**: When you need specific file pattern matching
+6. **Grep**: For complex regex import patterns
+7. **Read**: Read specific manifests, interface files
 
 ## Output Format
 

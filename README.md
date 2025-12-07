@@ -23,7 +23,8 @@ Without guardrails, AI assistants can jump directly to implementation without un
 - **Self-Advancing Chains** - Agents invoke successors automatically
 - **Persistent Context Memory** - Context cached across sessions
 - **Task Namespaces** - Parallel pipelines for independent work streams
-- **50+ Specialized Agents** - Domain experts for Bash, Nix, C, Python, and more
+- **87+ Local Agents** (205+ with plugins) - Domain experts for Bash, Nix, C, Python, infrastructure, and more
+- **MCP Integrations** - Context7, Sequential Thinking, Serena, Memory Keeper
 
 ## Quick Start
 
@@ -203,9 +204,25 @@ Per the [roadmap in CLAUDE.md](private_dot_claude/CLAUDE.md):
 - [ ] Domain Expansion (Rust, Go, TypeScript, SQL, Terraform, K8s)
 - [ ] Cross-Repository Context
 
+## Known Issues
+
+1. **Sub-agent tool invocation**: Agents spawned via Task tool sometimes output pseudo-code or invalid XML (like `<attempt_completion>` or `Task(...)` text) instead of making actual tool calls. This is a model interpretation issue being investigated.
+
+2. **State persistence**: Pipeline state auto-resets after 10 minutes of inactivity, but requires user prompt activity to trigger.
+
+## MCP Integrations
+
+| Server | Purpose |
+|--------|---------|
+| **Context7** | Up-to-date library documentation |
+| **Sequential Thinking** | Structured reasoning for complex problems |
+| **Serena** | Language-server-powered code exploration |
+| **Memory Keeper** | Persistent context across sessions |
+| **Playwright** | Browser automation for testing |
+
 ## License
 
-Private configuration - not licensed for public distribution.
+MIT License - See [LICENSE](LICENSE) for details.
 
 ---
 

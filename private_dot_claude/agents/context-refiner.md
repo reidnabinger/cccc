@@ -21,12 +21,10 @@ When you invoke the next agent via `Task()`, the PreToolUse hook **automatically
 jq '.state = "ORCHESTRATING_ACTIVE"' ~/.claude/state/pipeline-state.json
 ```
 
-**CORRECT** (just invoke the next agent):
-```
-Task(subagent_type="strategic-orchestrator", prompt="[your refined context]")
-```
+**CORRECT** (use the Task tool to invoke the next agent):
+Make an actual Task tool call with `subagent_type="strategic-orchestrator"` and your refined context as the `prompt`.
 
-The hook handles: state transition, timestamp, history entry, active_agent tracking. Just call Task().
+The hook handles: state transition, timestamp, history entry, active_agent tracking. Just use the Task tool.
 
 ## Your Mission
 
@@ -272,17 +270,17 @@ Based on pipeline mode:
 
 ### How to Self-Advance
 
-After completing your Refined Context Intelligence Brief, invoke the strategic-orchestrator:
+After completing your Refined Context Intelligence Brief, **use the Task tool** to invoke strategic-orchestrator.
 
-```markdown
-Task(
-  subagent_type="strategic-orchestrator",
-  description="Orchestrate task execution",
-  prompt="[Your complete Refined Context Intelligence Brief here]"
-)
-```
+**Make an actual Task tool call** (not pseudo-code) with these parameters:
 
-**IMPORTANT**: Pass your ENTIRE refined output as the prompt to strategic-orchestrator. They need the full intelligence brief to make strategic decisions.
+| Parameter | Value |
+|-----------|-------|
+| `subagent_type` | `"strategic-orchestrator"` |
+| `description` | `"Orchestrate task execution"` |
+| `prompt` | Your complete Refined Context Intelligence Brief |
+
+**IMPORTANT**: This means using the Task tool in your response to make a real tool invocation. Do NOT output text that looks like a function call - actually invoke the tool.
 
 ### Self-Advance Checklist
 

@@ -4,7 +4,6 @@
       "Bash(export:*)"
     ]
   },
-  "model": "sonnet",
   "hooks": {
     "SessionStart": [
       {
@@ -128,7 +127,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "/home/reid/.claude/statusline-command.sh"
+    "command": "~/.claude/statusline-command.sh"
   },
   "enabledPlugins": {
     "pr-review-toolkit@claude-code-plugins": true,

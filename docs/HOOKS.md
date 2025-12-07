@@ -340,7 +340,7 @@ The hook configuration lives in `~/.claude/settings.json`:
   },
   "statusLine": {
     "type": "command",
-    "command": "/home/reid/.claude/statusline-command.sh"
+    "command": "~/.claude/statusline-command.sh"
   },
   "enabledPlugins": {
     "pr-review-toolkit@claude-code-plugins": true,

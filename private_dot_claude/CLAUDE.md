@@ -51,21 +51,28 @@ After:  "[REVOKED - X now handled by pipeline] ~~Always do X before Y~~"
 
 ## BEHAVIORAL GUIDELINES
 
-### Smart-Tree (TOKEN-OPTIMIZED FILE OPERATIONS)
-USE SMART-TREE INSTEAD OF RAW FILE I/O!
-Smart-tree is a token-optimized MCP tool that provides 10x compression for file
-and codebase exploration. **PREFER smart-tree over raw Glob/Read/Bash for exploration.**
+### Serena (CODE EXPLORATION AND EDITING)
+USE SERENA FOR CODE EXPLORATION AND EDITING!
+Serena is a language-server-powered MCP tool for semantic code exploration and
+editing. It understands code structure, provides intelligent navigation, and
+enables precise code modifications.
 
 | Instead of... | Use... |
 |--------------|--------|
-| `tree`, `ls`, raw exploration | `mcp__smart-tree__overview` |
-| `find`, `glob` for files | `mcp__smart-tree__find` |
-| `grep`, content search | `mcp__smart-tree__search` |
-| Manual directory analysis | `mcp__smart-tree__analyze` |
-| Git log exploration | `mcp__smart-tree__history` |
+| Reading files | `mcp__serena__read_file` |
+| Finding files | `mcp__serena__find_file` |
+| Searching code | `mcp__serena__search_for_pattern` |
+| Editing code | `mcp__serena__replace_content` |
+
+**Before using serena tools, activate the project:**
+```
+mcp__serena__activate_project {project: 'project-name'}
+```
 
 This applies to YOU (the main agent) AND all sub-agents. When spawning agents,
-ensure they have access to smart-tree tools and are instructed to use them.
+ensure they have access to serena tools and are instructed to use them.
+
+[REVOKED - smart-tree replaced by serena] ~~Smart-tree is no longer used.~~
 
 ### Context7
 USE CONTEXT7 BEFORE YOU DO SOMETHING STUPID!
@@ -85,8 +92,8 @@ Before modifying code, ALWAYS check:
 - `git blame path/to/file` - Who wrote each line and why
 - `git log --grep="keyword"` - Find commits related to the feature
 
-Use `mcp__smart-tree__history` or `mcp__smart-tree__analyze {mode:'git_status'}`
-for AI-optimized git exploration.
+Use standard git commands (`git log`, `git blame`, `git diff`) for history exploration.
+Serena's language server integration provides semantic understanding of code changes.
 
 **In context-pipeline runs, git history is MANDATORY** - the history-gatherer
 sub-agent always runs in parallel with other gatherers.

@@ -19,12 +19,10 @@ When you invoke execution/review agents via `Task()`, the PreToolUse hook **auto
 jq '.state = "EXECUTING"' ~/.claude/state/pipeline-state.json
 ```
 
-**CORRECT** (just invoke agents):
-```
-Task(subagent_type="bash-specialist", prompt="[task details]")
-```
+**CORRECT** (use the Task tool to invoke agents):
+Make actual Task tool calls with the appropriate `subagent_type` and your task details as the `prompt`.
 
-The hook handles: state transition, timestamp, history entry, active_agent tracking. Just call Task().
+The hook handles: state transition, timestamp, history entry, active_agent tracking. Just use the Task tool.
 
 ## Your Role
 
@@ -433,13 +431,18 @@ You must evaluate execution results against ALL of these criteria:
 - Return final results to main Claude
 
 #### If ANY FAIL (Critical - Feedback Loop):
-**You MUST trigger a remediation cycle** by invoking `context-gatherer` with the review findings:
+**You MUST trigger a remediation cycle** by invoking `context-gatherer` with the review findings.
 
-```markdown
-Task(
-  subagent_type="context-gatherer",
-  description="Remediation cycle - address review failures",
-  prompt="""
+**Make an actual Task tool call** (not pseudo-code) with these parameters:
+
+| Parameter | Value |
+|-----------|-------|
+| `subagent_type` | `"context-gatherer"` |
+| `description` | `"Remediation cycle - address review failures"` |
+| `prompt` | See template below |
+
+**Prompt Template for Remediation:**
+```
 # REMEDIATION CYCLE - Review Failures Detected
 
 ## Original Task
@@ -454,7 +457,6 @@ Task(
 ## Specific Issues Found
 1. [Issue 1 with file:line references]
 2. [Issue 2 with file:line references]
-...
 
 ## Remediation Required
 [What needs to be fixed based on review feedback]
@@ -464,9 +466,9 @@ Gather context to address these specific failures. Focus on:
 - Understanding WHY the implementation failed the review
 - Finding the correct patterns/approaches to fix the issues
 - Identifying any missed requirements or conventions
-"""
-)
 ```
+
+**IMPORTANT**: Use the Task tool to make a real tool invocation. Do NOT output text that looks like a function call.
 
 This cycles the pipeline back to GATHERING → REFINING → ORCHESTRATING → EXECUTING → REVIEWING until the review passes.
 

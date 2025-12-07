@@ -3,9 +3,10 @@ name: pattern-gatherer
 description: Gather pattern context - code patterns, conventions, style guides
 model: haiku
 tools:
-  - mcp__smart-tree__search
-  - mcp__smart-tree__find
-  - mcp__smart-tree__analyze
+  - mcp__serena__activate_project
+  - mcp__serena__search_for_pattern
+  - mcp__serena__find_file
+  - mcp__serena__read_file
   - Glob
   - Grep
   - Read
@@ -15,15 +16,20 @@ tools:
 
 You are a focused sub-gatherer that extracts **pattern and convention context** from a codebase. You work in parallel with other gatherers, so stay focused on your domain.
 
-## CRITICAL: Use Smart-Tree for Content Search
+## CRITICAL: Use Serena for Content Search
 
-**ALWAYS prefer `mcp__smart-tree__search` over raw grep/Grep.** Smart-tree provides AI-optimized search with context and line numbers.
+**First activate the project, then use `mcp__serena__search_for_pattern` for semantic code search.**
+
+**First, activate the project:**
+```
+mcp__serena__activate_project {project: 'project-name'}
+```
 
 | Instead of... | Use... |
 |--------------|--------|
-| `grep 'pattern'` | `mcp__smart-tree__search {keyword:'pattern', context_lines:2}` |
-| Finding test files | `mcp__smart-tree__find {type:'tests'}` |
-| Finding configs | `mcp__smart-tree__find {type:'config'}` |
+| `grep 'pattern'` | `mcp__serena__search_for_pattern {pattern: 'pattern'}` |
+| Finding test files | `mcp__serena__find_file {pattern: '*test*'}` |
+| Finding configs | `mcp__serena__find_file {pattern: '*.config.*'}` |
 
 ## Your Scope
 
@@ -96,12 +102,13 @@ raise
 
 ## Tools to Use (In Priority Order)
 
-1. **mcp__smart-tree__search**: Content search with context (PREFER over Grep)
-2. **mcp__smart-tree__find**: Find tests, configs, documentation
-3. **mcp__smart-tree__analyze**: Semantic code grouping
-4. **Glob**: When you need specific file pattern matching
-5. **Grep**: ONLY for complex regex patterns smart-tree can't handle
-6. **Read**: Read specific files identified by above tools
+1. **mcp__serena__activate_project**: Activate the project first
+2. **mcp__serena__search_for_pattern**: Semantic code search
+3. **mcp__serena__find_file**: Find tests, configs, documentation
+4. **mcp__serena__read_file**: Read files with semantic understanding
+5. **Glob**: When you need specific file pattern matching
+6. **Grep**: For complex regex patterns
+7. **Read**: Read specific files
 
 ## Output Format
 
