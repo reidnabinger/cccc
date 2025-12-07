@@ -5,18 +5,23 @@
 # Called by SessionStart hook with "init" argument
 # Called by UserPromptSubmit hook with "check-prompt" argument
 #
-# Manages state file at ~/.claude/state/pipeline-state.json
+# Namespace = basename of PWD (e.g., "my-project" for /home/user/gh/my-project)
+# State file: ~/.claude/state/pipeline-state-{namespace}.json
 # State machine: IDLE → GATHERING → REFINING → ORCHESTRATING_ACTIVE → EXECUTING → COMPLETE
 #
-# Note: REFINING → ORCHESTRATING_ACTIVE transition happens immediately when
-# strategic-orchestrator is approved (in check-subagent-allowed.sh)
+# If a pipeline is already running (non-IDLE) in current namespace, offers to
+# create a git worktree for parallel work.
 
 set -euo pipefail
 
 readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 readonly STATE_DIR="${HOME}/.claude/state"
-readonly STATE_FILE="${STATE_DIR}/pipeline-state.json"
 readonly CACHE_SCRIPT="${HOME}/.claude/scripts/context-cache.sh"
+
+# Namespace derived from current working directory (set by init_namespace)
+CURRENT_NAMESPACE=""
+STATE_FILE=""
+
 readonly WORKFLOW_INSTRUCTIONS='
 ADAPTIVE PIPELINE: The pipeline now supports fast-path routing for simple tasks.
 
@@ -46,7 +51,7 @@ IMPORTANT: Explore, Plan, and general-purpose agents are NOT exempt from this wo
 '
 
 #######################################
-# Log message to stderr with timestamp
+# Log message to stderr
 # Globals:
 #   SCRIPT_NAME
 # Arguments:
@@ -55,6 +60,65 @@ IMPORTANT: Explore, Plan, and general-purpose agents are NOT exempt from this wo
 function log_message() {
   local -r message="$1"
   echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [${SCRIPT_NAME}] ${message}" >&2
+}
+
+#######################################
+# Get namespace from current working directory
+# Sets global CURRENT_NAMESPACE and STATE_FILE
+# Globals:
+#   CURRENT_NAMESPACE (modified)
+#   STATE_FILE (modified)
+#   STATE_DIR
+#######################################
+function init_namespace() {
+  CURRENT_NAMESPACE="$(basename "$(pwd)")"
+  STATE_FILE="${STATE_DIR}/pipeline-state-${CURRENT_NAMESPACE}.json"
+  log_message "Namespace: ${CURRENT_NAMESPACE}"
+}
+
+#######################################
+# Check if namespace has an active pipeline
+# Globals:
+#   STATE_FILE
+# Outputs:
+#   State name to stdout ("IDLE", "GATHERING", etc.)
+#######################################
+function get_pipeline_state() {
+  if [[ ! -f "${STATE_FILE}" ]]; then
+    echo "IDLE"
+    return 0
+  fi
+  jq -r '.state // "IDLE"' "${STATE_FILE}" 2>/dev/null || echo "IDLE"
+}
+
+#######################################
+# Generate git worktree suggestion message
+# Used when namespace has active pipeline and user may want parallel work
+# Globals:
+#   CURRENT_NAMESPACE
+# Arguments:
+#   $1 - Current state name
+# Outputs:
+#   Suggestion text to stdout
+#######################################
+function worktree_suggestion() {
+  local -r state="$1"
+  local -r branch_suffix="$(date +%Y%m%d-%H%M%S)"
+  local -r suggested_branch="work/${CURRENT_NAMESPACE}-${branch_suffix}"
+
+  cat <<EOF
+
+⚠️  ACTIVE PIPELINE DETECTED in namespace '${CURRENT_NAMESPACE}' (state: ${state})
+
+If you need to work on something else in parallel, create a git worktree:
+
+  git worktree add ../${CURRENT_NAMESPACE}-worktree -b ${suggested_branch}
+  cd ../${CURRENT_NAMESPACE}-worktree
+
+Then start a new Claude session there. Each directory = separate namespace.
+
+To continue with the current pipeline, just proceed normally.
+EOF
 }
 
 #######################################
@@ -142,18 +206,19 @@ function write_state_atomic() {
 
 #######################################
 # Initialize pipeline state
-# Creates state directory and initial state file
+# Creates state directory and initial state file for current namespace
 # Globals:
 #   STATE_DIR
 #   STATE_FILE
+#   CURRENT_NAMESPACE
 # Outputs:
-#   Confirmation message to stdout
+#   JSON with hookSpecificOutput (SessionStart format) to stdout
 # Returns:
 #   0 on success, 1 on failure
 #######################################
 function initialize_state() {
-  log_message "Initializing pipeline state"
-  
+  log_message "Initializing pipeline state for namespace: ${CURRENT_NAMESPACE}"
+
   # Create state directory if needed
   if [[ ! -d "${STATE_DIR}" ]]; then
     if ! mkdir -p "${STATE_DIR}"; then
@@ -162,16 +227,35 @@ function initialize_state() {
     fi
     log_message "Created state directory: ${STATE_DIR}"
   fi
-  
-  # Create initial state file
-  local -r initial_state="$(create_initial_state)"
-  if ! write_state_atomic "${initial_state}"; then
-    log_message "ERROR: Failed to initialize state file"
-    return 1
+
+  # Only create initial state if file doesn't exist or is in IDLE/COMPLETE state
+  # This preserves in-progress pipelines across session restarts
+  local current_state="IDLE"
+  if [[ -f "${STATE_FILE}" ]]; then
+    current_state="$(jq -r '.state // "IDLE"' "${STATE_FILE}" 2>/dev/null)" || current_state="IDLE"
   fi
-  
-  echo "Pipeline state initialized at ${STATE_FILE}"
-  log_message "Pipeline state initialized successfully"
+
+  if [[ ! -f "${STATE_FILE}" ]] || [[ "${current_state}" == "IDLE" ]] || [[ "${current_state}" == "COMPLETE" ]]; then
+    local -r initial_state="$(create_initial_state)"
+    if ! write_state_atomic "${initial_state}"; then
+      log_message "ERROR: Failed to initialize state file"
+      return 1
+    fi
+    log_message "Pipeline state initialized successfully"
+  else
+    log_message "Preserving existing pipeline state: ${current_state}"
+  fi
+
+  # Output JSON for SessionStart hook response
+  cat <<EOF
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "Namespace '${CURRENT_NAMESPACE}' ready (state: ${current_state})"
+  }
+}
+EOF
+
   return 0
 }
 
@@ -264,9 +348,33 @@ ${refined}
   "additional_context": ${escaped_instructions}
 }
 EOF
+  elif [[ "${current_state}" == "COMPLETE" ]]; then
+    # COMPLETE state - reset to IDLE for next task
+    log_message "COMPLETE state, resetting to IDLE"
+    local -r initial_state="$(create_initial_state)"
+    write_state_atomic "${initial_state}" >/dev/null 2>&1 || true
+
+    local -r escaped_instructions="$(echo "${WORKFLOW_INSTRUCTIONS}" | jq -Rs .)"
+    cat <<EOF
+{
+  "continue": true,
+  "additional_context": ${escaped_instructions}
+}
+EOF
   else
-    log_message "Non-IDLE state, allowing continuation without injection"
-    echo '{"continue": true}'
+    # Active pipeline (GATHERING, REFINING, ORCHESTRATING_ACTIVE, EXECUTING)
+    # Show worktree suggestion in case user wants parallel work
+    log_message "Active pipeline (${current_state}), showing worktree suggestion"
+
+    local -r suggestion="$(worktree_suggestion "${current_state}")"
+    local -r escaped_suggestion="$(echo "${suggestion}" | jq -Rs .)"
+
+    cat <<EOF
+{
+  "continue": true,
+  "additional_context": ${escaped_suggestion}
+}
+EOF
   fi
 
   return 0
@@ -287,9 +395,13 @@ function main() {
     echo "ERROR: jq is required for pipeline-gate.sh" >&2
     return 1
   fi
-  
+
+  # Initialize namespace from current working directory
+  # This sets CURRENT_NAMESPACE and STATE_FILE globals
+  init_namespace
+
   local -r command="${1:-}"
-  
+
   case "${command}" in
     init)
       initialize_state

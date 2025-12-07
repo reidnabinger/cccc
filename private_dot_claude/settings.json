@@ -4,6 +4,7 @@
       "Bash(export:*)"
     ]
   },
+  "model": "sonnet",
   "hooks": {
     "SessionStart": [
       {
