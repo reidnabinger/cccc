@@ -106,5 +106,5 @@ Some utility agents from the previous architecture remain at the root level:
 - `codepath-culler.md` / `codepath-culler-contrarian.md` - Dead code analysis
 - `critical-code-reviewer.md` - General code review
 - `docs-reviewer.md` - Documentation review
-- Various shell hackers (fish, zsh, powershell) - Shell-specific utilities
-- `latex.md`, `visualization.md`, `text-manipulator.md` - Utility agents
+- `latex.md` - LaTeX document and mathematical notation generation
+- `semantic-explorer.md` - MCP-native codebase exploration (alternative to Explore)

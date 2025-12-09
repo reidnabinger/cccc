@@ -59,12 +59,49 @@ After:  "[REVOKED - X now handled by pipeline] ~~Always do X before Y~~"
 
 ## BEHAVIORAL GUIDELINES
 
+### MCP Tools Over Bash
+
+**See `MCP-TOOLKIT.md` for the complete reference.**
+
+You have powerful MCP servers connected. **Use them instead of bash chains** for
+code understanding tasks:
+
+| Instead of... | Use... |
+|---------------|--------|
+| `grep -r "pattern"` | `mcp__serena__search_for_pattern` |
+| `find . -name "*.py"` | `mcp__serena__find_file` |
+| `cat file.py` then parse | `mcp__serena__get_symbols_overview` |
+| Multiple grep chains | `mcp__serena__find_referencing_symbols` |
+| Web search for docs | `mcp__context7__get-library-docs` |
+
+**Psychological triggers** - when you think these, reach for MCP:
+- "Let me search the codebase..." -> Serena, not grep
+- "Where is this function called?" -> `find_referencing_symbols`
+- "I need to understand this library..." -> Context7
+- "What's the structure of..." -> `get_symbols_overview`
+- "This is a complex decision..." -> Sequential-thinking
+
+**Rule of thumb:** UNDERSTAND code with MCP tools. RUN things with Bash.
+
 ### Context7
 
 Context7 is a very valuable tool. You can use it to search for and retrieve
 the latest documentation about languages, APIs, libraries, platforms, services,
 protocols, anything for which official documentation exists. Not only is this
 the right source for that information--the MCP server optimizes the token usage.
+
+### Serena
+
+Serena provides **semantic code analysis** - it understands code structure, not
+just text patterns. For any code exploration task, check if Serena can do it:
+
+- `find_symbol` - Find definitions by name path
+- `find_referencing_symbols` - Find all usages (semantic, not grep)
+- `get_symbols_overview` - Map a file's structure
+- `search_for_pattern` - Regex with semantic awareness
+- `replace_symbol_body` - Edit code semantically
+
+When you would reach for grep/cat/find to understand code, use Serena instead.
 
 ### Reckless Suggestions
 

@@ -4,6 +4,7 @@
       "Bash(export:*)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "hooks": {
     "SessionStart": [
       {
@@ -141,6 +142,5 @@
     "code-review@claude-code-plugins": true,
     "explanatory-output-style@claude-code-plugins": true
   },
-  "enableAllProjectMcpServers": true,
   "alwaysThinkingEnabled": true
 }

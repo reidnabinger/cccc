@@ -6,6 +6,19 @@ description: Dead code removal workflow with adversarial review
 
 You are removing dead code. This is a two-phase adversarial process to prevent accidental removal of code that's actually needed.
 
+## Tools
+
+Please use all of the tools at your disposal for code exploration.
+
+- Serena MCP:  Read/Edit code by symbol!
+- Smart-Tree MCP:  Navigate and consume an entire repo in a few KB!
+- Filesystem MCP: Fly through the filesystem!
+- memory-keeper MCP: Store and Retrieve memories from many previous sessions
+- sequential-thinking MCP: Give yourself ample time, and think iteratively.
+- exa MCP:  AI-optimized Web Search!
+- context7 MCP: Up-to-date library and documentation gathering!
+- brave-search MCP: Search the internet with Brave--much more neutral than Google!
+
 ## Scope
 
 Target: $ARGUMENTS (if empty, scan the whole codebase or prompt for scope)
@@ -80,7 +93,7 @@ After removals:
 1. Run full test suite
 2. Run linters
 3. Check for import errors
-4. Verify build succeeds
+4. Verify build succeeds-json
 
 ```bash
 # Typical verification
