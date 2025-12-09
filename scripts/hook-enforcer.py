@@ -399,7 +399,25 @@ Then run `chezmoi apply` to deploy globally.
 # --- Hook handlers ---
 
 
-def handle_pre_tool(
+def handle_pre_tool(tool_name: str, tool_input: dict[str, Any]) -> None:
+    """Handle PreToolUse hook."""
+    # DEV-NOTE: Claude Code wraps tool input as {"tool_input": {...actual fields...}}
+    # Unwrap if nested
+    if "tool_input" in tool_input and isinstance(tool_input["tool_input"], dict):
+        tool_input = tool_input["tool_input"]
+    logger.debug(f"PreToolUse: {tool_name}, input keys: {list(tool_input.keys())}")
+
+    # --- TodoWrite checks ---
+    if tool_name == "TodoWrite":
+        passed, result = check_rule("sequential_before_todo")
+        if not passed:
+            output_block(MSG_SEQUENTIAL_BEFORE_TODO)
+        # Track that todo was created (will be done in post-tool)
+        output_allow()
+
+    # --- File edit checks ---
+    if tool_name in FILE_EDIT_TOOLS:
+        # Extract file path from tool input
         file_path = tool_input.get("file_path", "")
 
         # Block: cccc project config
