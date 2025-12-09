@@ -1,0 +1,12 @@
+[submodule "plugins/superpowers-marketplace"]
+    path = plugins/superpowers-marketplace
+    url = https://github.com:obra/superpowers-marketplace.git
+[submodule "plugins/claude-code-marketplace"]
+    path = plugins/claude-code-marketplace
+	  url = https://github.com:ananddtyagi/claude-code-marketplace.git
+[submodule "plugins/claude-code-plugins"]
+    path = plugins/claude-code-plugins
+	  url = https://github.com:anthropics/claude-code.git
+[submodule "plugins/every-marketplace"]
+    path = plugins/every-marketplace
+	  url = https://github.com/EveryInc/every-marketplace.git

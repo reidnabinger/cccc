@@ -1,0 +1,146 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py session-start"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude-code-docs/claude-docs-helper.sh hook-check"
+          }
+        ]
+      },
+      {
+        "matcher": "TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py pre-tool TodoWrite"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py pre-tool Edit"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py pre-tool Write"
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py pre-tool NotebookEdit"
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py pre-tool Task"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__sequential-thinking__sequentialthinking",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py pre-tool mcp__sequential-thinking__sequentialthinking"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py post-tool Edit"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py post-tool Write"
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py post-tool NotebookEdit"
+          }
+        ]
+      },
+      {
+        "matcher": "TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py post-tool TodoWrite"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/scripts/hook-enforcer.py stop"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "/home/reid/.claude/statusline-command.sh"
+  },
+  "enabledPlugins": {
+    "pr-review-toolkit@claude-code-plugins": true,
+    "commit-commands@claude-code-plugins": true,
+    "feature-dev@claude-code-plugins": true,
+    "security-guidance@claude-code-plugins": true,
+    "code-review@claude-code-plugins": true,
+    "explanatory-output-style@claude-code-plugins": true
+  },
+  "enableAllProjectMcpServers": true,
+  "alwaysThinkingEnabled": true
+}
